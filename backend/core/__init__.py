@@ -1,0 +1,1 @@
+# Core module for embedded walking assistant robot backend
