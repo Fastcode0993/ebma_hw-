@@ -1,0 +1,7 @@
+com.example.robotbluetooth.app-pngs-0 D:\emba_hw\mobile\android\app\build\generated\res\pngs\debug
+com.example.robotbluetooth.app-resValues-1 D:\emba_hw\mobile\android\app\build\generated\res\resValues\debug
+com.example.robotbluetooth.app-packageDebugResources-2 D:\emba_hw\mobile\android\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.example.robotbluetooth.app-packageDebugResources-3 D:\emba_hw\mobile\android\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.example.robotbluetooth.app-debug-4 D:\emba_hw\mobile\android\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.example.robotbluetooth.app-debug-5 D:\emba_hw\mobile\android\app\src\debug\res
+com.example.robotbluetooth.app-main-6 D:\emba_hw\mobile\android\app\src\main\res

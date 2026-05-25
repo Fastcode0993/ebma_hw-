@@ -1,0 +1,69 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.example.robotbluetooth"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="23"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-permission
+11-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:2:5-95
+12        android:name="android.permission.BLUETOOTH"
+12-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:2:22-65
+13        android:maxSdkVersion="30" />
+13-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:2:66-92
+14    <uses-permission
+14-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:3:5-101
+15        android:name="android.permission.BLUETOOTH_ADMIN"
+15-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:3:22-71
+16        android:maxSdkVersion="30" />
+16-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:3:72-98
+17    <uses-permission
+17-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:4:5-106
+18        android:name="android.permission.ACCESS_FINE_LOCATION"
+18-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:4:22-76
+19        android:maxSdkVersion="30" />
+19-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:4:77-103
+20    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+20-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:5:5-76
+20-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:5:22-73
+21    <uses-permission
+21-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:6:5-8:58
+22        android:name="android.permission.BLUETOOTH_SCAN"
+22-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:7:9-57
+23        android:usesPermissionFlags="neverForLocation" />
+23-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:8:9-55
+24
+25    <application
+25-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:10:5-22:19
+26        android:allowBackup="true"
+26-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:11:9-35
+27        android:debuggable="true"
+28        android:extractNativeLibs="false"
+29        android:label="로봇 블루투스"
+29-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:12:9-32
+30        android:testOnly="true"
+31        android:theme="@style/AppTheme" >
+31-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:13:9-40
+32        <activity
+32-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:14:9-21:20
+33            android:name="com.example.robotbluetooth.MainActivity"
+33-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:15:13-41
+34            android:exported="true" >
+34-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:16:13-36
+35            <intent-filter>
+35-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:17:13-20:29
+36                <action android:name="android.intent.action.MAIN" />
+36-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:18:17-69
+36-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:18:25-66
+37
+38                <category android:name="android.intent.category.LAUNCHER" />
+38-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:19:17-77
+38-->D:\emba_hw\mobile\android\app\src\main\AndroidManifest.xml:19:27-74
+39            </intent-filter>
+40        </activity>
+41    </application>
+42
+43</manifest>

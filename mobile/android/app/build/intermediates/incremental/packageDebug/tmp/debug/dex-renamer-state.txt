@@ -1,0 +1,7 @@
+#Sat May 23 00:24:40 KST 2026
+base.0=D\:\\emba_hw\\mobile\\android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
+base.1=D\:\\emba_hw\\mobile\\android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\6\\classes.dex
+path.0=0/classes.dex
+path.1=6/classes.dex
+renamed.0=classes.dex
+renamed.1=classes2.dex

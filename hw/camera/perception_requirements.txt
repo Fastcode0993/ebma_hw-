@@ -1,0 +1,5 @@
+# Raspberry Pi installs these with apt instead of pip:
+#   sudo apt install -y python3-opencv python3-picamera2 python3-numpy
+#
+# Do not pip-install ultralytics on the Raspberry Pi 4 here. On recent
+# Python/aarch64 it can pull very large torch/CUDA wheels and fill the SD card.

@@ -1,0 +1,476 @@
+# EMBA Walking Assistant Robot Project
+
+작성일: 2026-05-20
+
+## 1. 현재 목표
+
+라즈베리파이 4와 안드로이드 앱이 Bluetooth Classic SPP로 연결되고, 라즈베리파이는 USB 시리얼로 Arduino Mega 2560에 명령을 보내 로봇 모터를 제어한다.
+
+개발 순서:
+
+1. 수동조작: 앱 버튼으로 모터 전진/후진/정지/속도/엔코더 확인
+2. 자율동작: 장애물/위험물 회피 주행
+3. 지도 동작: 현재 위치와 목표 위치 기반 이동
+4. 음성인식 연결: 휴대폰 음성인식/지도 검색과 연동
+
+## 2. 구매 부품 CSV 기준 주요 부품
+
+CSV 파일:
+
+`C:/Users/MASTR/Downloads/table-f78c2be0-be08-4d30-a194-e43d9c3ea576.csv`
+
+확인된 부품:
+
+| 부품 | 모델/품번 | 이번 단계 사용 여부 | 용도 |
+|---|---|---:|---|
+| Arduino Mega 2560 | A000067 R3 | 사용 | 모터 드라이버 제어, 엔코더 입력 |
+| Raspberry Pi 4 Model B 4GB | BCM2711 | 사용 | Bluetooth 서버, 카메라, 상위 제어 |
+| 12V Low noise DC Motor with Encoder | FIT0277 | 사용 | 1차 구동 모터 |
+| 마이크로 마우스 로봇용 바퀴 | HD95-14-6B | 사용 | 모터 축에 결합 |
+| 5V 5A DC-DC 스텝다운 컨버터 | SZH-EK366 | 사용 권장 | Raspberry Pi 안정 전원 |
+| LM2596 DC-DC 컨버터 | SZH-PWSD-001 | 선택 | Arduino/센서 보조 전원 |
+| FND 전압표시 XL4015 DC-DC | SZH-PWSDF-036 | 선택 | 가변 전원 테스트 |
+| XL4015 승압/강하 DC-DC | SZH-PWSD-049 | 선택 | 전원 실험용 |
+| MPU-9250 9축 센서 | GY-9250 | 다음 단계 | 자세/기울기 센서 |
+| HX711 로드셀 앰프 | SEN-13879 | 다음 단계 | 하중/압력 센서 |
+| TXB0104 / Logic Level Converter | ada-1875 / NER-15966 | 필요시 | 3.3V-5V 신호 변환 |
+| PC817 4채널 포토커플러 | VLT-VC066 | 필요시 | 노이즈 절연 |
+| 전해 캐패시터 16V 470uF | E/C-16V-470uF | 사용 권장 | 모터 전원 노이즈 완화 |
+| 아두이노 우노 4방향 모터 드라이브 확장보드 PS2 | HPRO-0083 | 보류 | 현재 N1/N2 방식과 핀 정의가 달라 확인 필요 |
+
+## 3. 시스템 연결 구조
+
+```text
+Android Phone
+  Bluetooth Classic SPP
+Raspberry Pi 4
+  USB serial
+Arduino Mega 2560
+  D5/D6 PWM + D2/D3 encoder input
+Motor Driver
+  M-/M+
+12V DC Encoder Motor
+```
+
+중요:
+
+- Raspberry Pi와 Arduino는 USB 케이블로 연결한다.
+- Raspberry Pi의 5V 핀으로 Arduino/Motor를 먹이지 않는다.
+- 모터 전원과 로직 전원은 분리하되 GND는 공통으로 묶는다.
+- 모터는 큰 전류와 노이즈가 생기므로 Pi 전원과 모터 전원을 최대한 분리한다.
+
+## 4. 전원 배선
+
+### 4.0 추가 구매 권장품
+
+현재 전원 커넥터가 XT60/AT60 계열이라면 모터 전원 원줄은 그대로 쓰고, 그 원줄에서 필요한 전압만 분기한다.
+
+우선 구매하면 좋은 것:
+
+| 물품 | 권장 사양 | 용도 |
+|---|---|---|
+| XT60/AT60 수-암 pigtail | 배터리/전원 커넥터와 같은 규격 | 배터리 전원 입력선 |
+| 인라인 퓨즈 홀더 + 자동차 블레이드 퓨즈 | 5A, 10A, 15A 몇 개 | 쇼트 보호. 배터리 + 바로 뒤에 장착 |
+| 전원 스위치 또는 비상정지 스위치 | DC 12V 이상, 전류 여유 있게 | 전체 전원 차단 |
+| 전원 분배 터미널 블록 | 2-6구 | XT60/AT60 전원을 모터드라이버와 DC-DC로 분기 |
+| 5V 5A DC-DC buck | 이미 구매한 SZH-EK366 사용 가능 | Raspberry Pi 4 안정 전원 |
+| 470uF 이상 전해 캐패시터 | 16V 이상, 가능하면 25V도 좋음 | 모터드라이버 전원 노이즈 완화 |
+| 굵은 전원선 | 모터 전원 AWG18 이상 권장 | 배터리 -> 드라이버 전원 |
+| 얇은 신호선/Dupont/JST | 22-26AWG | N1/N2, 엔코더, 초음파 센서 신호 |
+
+### 4.0.1 Arduino / Raspberry Pi 전원 연결용으로 살 것
+
+질문한 `+/- 선`과 `C타입 5핀 선` 기준으로는 아래 구성이 제일 단순하고 안전하다.
+
+| 대상 | 사야 하는 것 | 연결 |
+|---|---|---|
+| Raspberry Pi 4 전원 | USB-C 전원 케이블 pigtail 또는 USB-C 5V 전원 입력 모듈 | 5V buck OUT+ -> USB-C VBUS, 5V buck OUT- -> USB-C GND |
+| Raspberry Pi 4 전원 대안 | 한쪽은 USB-C 수, 반대쪽은 빨강/검정 2선으로 나온 전원 케이블 | 빨강 -> 5V+, 검정 -> GND |
+| Arduino Mega 전원/통신 | USB A-B 케이블 | Raspberry Pi USB-A -> Arduino Mega USB-B |
+| Arduino 별도 전원 대안 | DC barrel jack 5.5x2.1mm pigtail | 7-12V+ -> 센터 +, GND -> 바깥 - |
+| 전원 분기 | 2핀 터미널 블록 또는 WAGO 커넥터 | XT60/AT60 전원을 모터드라이버와 buck 입력으로 분기 |
+| 전원선 | 빨강/검정 실리콘 와이어 | 모터/메인 전원은 AWG18 정도, 5V 전원은 AWG20-22 정도 |
+
+추천 실제 구성:
+
+```text
+XT60/AT60 배터리 +
+  -> 퓨즈
+  -> 스위치
+  -> 12V 분배 +
+      -> 모터드라이버 VM/Motor+
+      -> 5V buck IN+
+
+XT60/AT60 배터리 -
+  -> 12V 분배 -
+      -> 모터드라이버 GND
+      -> 5V buck IN-
+
+5V buck OUT+
+  -> USB-C pigtail 빨강선 또는 VBUS
+
+5V buck OUT-
+  -> USB-C pigtail 검정선 또는 GND
+
+Raspberry Pi USB-A
+  -> Arduino Mega USB-B 케이블
+```
+
+즉 Arduino Mega는 처음에는 별도 +/- 전원선을 사지 말고, Raspberry Pi와 USB A-B 케이블로 연결해서 전원과 시리얼 통신을 같이 쓰는 편이 쉽다.
+
+### 4.0.2 Raspberry Pi 4 + Arduino Mega 동시 전원 원칙
+
+현재 구성에서는 Raspberry Pi GPIO 핀을 통신용으로 쓰지 않는다. Raspberry Pi와 Arduino는 USB 케이블 하나로 시리얼 통신한다.
+
+권장:
+
+```text
+12.8V 배터리
+  -> 5V 5A buck
+      -> Raspberry Pi 4 USB-C 전원
+
+Raspberry Pi 4 USB-A
+  -> USB A-B 케이블
+      -> Arduino Mega USB-B 전원 + 통신
+```
+
+이 구조에서는 Arduino Mega에 별도 배럴잭/VIN 전원을 넣지 않는다.
+
+피해야 할 것:
+
+- 12.8V 배터리를 Raspberry Pi USB-C나 5V 핀에 직접 연결
+- 12.8V 배터리를 Arduino 5V 핀에 직접 연결
+- Arduino가 Pi USB로 연결된 상태에서 Arduino 5V 핀에 별도 5V를 직접 주입
+- Raspberry Pi GPIO 3.3V 신호와 Arduino 5V 신호를 직접 연결
+
+Arduino Mega를 별도 전원으로 먹여야 한다면:
+
+- 배럴잭/VIN은 7-12V 권장
+- 12.8V 배터리를 그대로 넣는 것은 권장하지 않음
+- 별도 buck으로 7-9V 정도를 만들어 배럴잭/VIN에 넣는 편이 낫다
+- 그래도 USB 통신을 유지할 경우 GND 기준이 섞이므로 배선 확인이 필요하다
+
+현재 프로젝트에서는 별도 Arduino 전원보다 Pi USB-A -> Arduino USB-B 하나로 시작한다.
+
+당장 없어도 되는 것:
+
+- 로직 레벨 컨버터: HC-SR04를 Arduino Mega에 직접 연결하므로 현재는 필수 아님
+- 추가 강하 컨버터: Pi용 5V 5A buck 하나가 안정적이면 Arduino는 USB로 받아도 됨
+- MT3608 승압 모듈: 현재 12V 모터/5V 로직 구성에는 필수 아님
+
+### 4.1 권장 전원 구성
+
+| 전원 대상 | 권장 전원 | 연결 |
+|---|---|---|
+| Raspberry Pi 4 | 5V 3A 이상, 가능하면 5V 5A DC-DC | 5V 5A 컨버터 출력 -> USB-C 또는 안정적인 5V 입력 |
+| Arduino Mega | Pi USB 또는 별도 7-12V 입력 | Pi와 USB 연결 시 USB로 전원 공급 가능 |
+| 모터 드라이버 모터 전원 | 모터 정격 12V | 12V+ -> 드라이버 VM/VIN/Motor V+, 12V- -> 드라이버 GND |
+| 모터 드라이버 로직 VCC | Arduino 5V | Arduino 5V -> 드라이버 VCC |
+| 모터 드라이버 로직 GND | Arduino GND | Arduino GND -> 드라이버 GND |
+
+### 4.2 반드시 공통 GND
+
+다음 GND는 반드시 서로 연결되어야 한다.
+
+```text
+12V 배터리/전원 -
+모터 드라이버 GND
+Arduino GND
+필요 시 센서 GND
+```
+
+Raspberry Pi는 Arduino와 USB로 연결되므로 USB GND가 이미 공유된다.
+
+주의:
+
+- 모터 전원 12V를 Arduino 5V 또는 Raspberry Pi 5V에 넣으면 고장난다.
+- 모터 드라이버의 VCC가 로직 5V 입력인지, 모터 전원 입력인지 모듈 실크를 먼저 확인해야 한다.
+- `VCC`, `VM`, `VIN`, `12V`, `Motor V+` 표기가 섞여 있으면 사진/모델 기준으로 재확인한다.
+
+## 5. 현재 확정된 1번 모터 배선
+
+모터:
+
+- 12V Low noise DC Motor with Encoder FIT0277
+- 현재 1개만 장착
+- 엔코더 포함
+
+### 5.1 모터 전원 출력선
+
+사용자가 지정한 방향:
+
+| 모터 드라이버 출력 | 모터 |
+|---|---|
+| M+ | 모터 + |
+| M- | 모터 - |
+
+방향이 반대로 움직이면 M+/M-를 바꾸거나 Arduino 코드의 forward/backward PWM 방향을 바꾼다.
+
+### 5.2 엔코더 선
+
+| 모터 엔코더 선 | Arduino Mega 핀 |
+|---|---|
+| Encoder A | Digital 2 |
+| Encoder B | Digital 3 |
+| Encoder VCC | 5V |
+| Encoder GND | GND |
+
+현재 Arduino 코드는 `INPUT_PULLUP`을 사용한다.
+
+### 5.3 모터 드라이버 제어선
+
+| 모터 드라이버 핀 | Arduino Mega 핀 | 설명 |
+|---|---:|---|
+| N1 / IN1 | D5 | PWM 가능 핀, 1번 모터 방향/속도 |
+| N2 / IN2 | D6 | PWM 가능 핀, 1번 모터 방향/속도 |
+| VSS / VCC / Logic 5V | 5V | 드라이버 로직 전원. 신호 기준 전압이라 반드시 필요 |
+| GND | GND | Arduino GND와 공통. 신호 기준점이라 반드시 필요 |
+| Motor Power + / VM / VIN | 12V+ | 모터 전원 |
+| Motor Power GND | 12V- | Arduino GND와 공통 |
+
+현재 코드 기준:
+
+| 명령 | N1(D5) | N2(D6) | 동작 |
+|---|---:|---:|---|
+| `F` | 0 | PWM | 전진 |
+| `B` | PWM | 0 | 후진 |
+| `S` | 0 | 0 | 정지 |
+| `SPD 0..255` | - | - | PWM 속도 설정 |
+| `ENC` | - | - | 엔코더 카운트 출력 |
+
+## 6. 나중에 추가할 2번 모터 예비 핀
+
+사용자 지정:
+
+| 모터 드라이버 핀 | Arduino Mega 핀 | 설명 |
+|---|---:|---|
+| N3 / IN3 | D8 | 2번 모터 방향 제어 |
+| N4 / IN4 | D9 | 2번 모터 방향 제어/PWM 가능 |
+
+주의:
+
+- Arduino Mega에서 D8은 기본 PWM 핀이 아니다.
+- 2번 모터 속도제어까지 필요하면 D9, D10 또는 다른 PWM 핀 조합을 쓰는 편이 좋다.
+- 단순 전진/후진만이면 D8/D9로 가능하다.
+
+## 7. Raspberry Pi 4 연결
+
+| Raspberry Pi | 연결 대상 | 설명 |
+|---|---|---|
+| USB-A | Arduino Mega USB | 시리얼 명령 전송 |
+| USB-C 전원 | 5V 3A 이상 | Pi 전원 |
+| Bluetooth | Android App | SPP 연결 |
+| CSI 또는 USB | 카메라 | `camara.py` PHOTO 기능 |
+
+라즈베리파이 실행:
+
+```bash
+cd /home/test/test/ebma_hw-/hw
+sudo python3 camera/camara.py --arduino-port /dev/ttyACM0
+```
+
+카메라 없이 모터/블루투스만:
+
+```bash
+sudo python3 camera/camara.py --arduino-port /dev/ttyACM0 --no-camera
+```
+
+블루투스 테스트 전용:
+
+```bash
+cd /home/test/test/ebma_hw-/hw/camera
+sudo python3 testcc.py --forget-old-devices --no-camera --log-file /home/test/apptest_bluetooth_camera.log
+```
+
+## 8. Arduino Mega 업로드 대상
+
+현재 업로드할 스케치:
+
+`D:/emba_hw/hw/arduino/motor_bridge/motor_bridge.ino`
+
+Arduino IDE 설정:
+
+| 항목 | 값 |
+|---|---|
+| Board | Arduino Mega or Mega 2560 |
+| Processor | ATmega2560 |
+| Baudrate | 115200 |
+
+시리얼 명령:
+
+```text
+F
+B
+S
+SPD 120
+ENC
+```
+
+시리얼 응답 예:
+
+```json
+{"command":"forward","speed":120,"encoder":42}
+```
+
+## 9. Android 앱 현재 상태
+
+APK:
+
+`D:/emba_hw/mobile/android/app/build/outputs/apk/debug/app-debug.apk`
+
+현재 구현:
+
+- 메인 화면 오른쪽 위 Bluetooth 아이콘
+- Bluetooth 화면에서 ALL SEARCH 후 수동 Connect
+- 앱 시작 시 자동 연결하지 않음
+- Bluetooth 기능 ON/OFF 저장
+- 메인 하단 4개 모드 버튼:
+  - 수동조작
+  - 자율동작
+  - 지도 동작
+  - 기타
+- 수동조작 화면:
+  - Speed PWM 슬라이더
+  - FORWARD
+  - BACKWARD
+  - STOP
+  - ENCODER
+- 기타 화면:
+  - ULTRASONIC DISTANCE
+  - PHOTO TEST
+
+## 10. 센서/확장 부품 연결 계획
+
+### 10.1 MPU-9250
+
+추천: Arduino Mega I2C에 연결
+
+| MPU-9250 | Arduino Mega |
+|---|---|
+| VCC | 3.3V 또는 모듈 허용 시 5V |
+| GND | GND |
+| SDA | D20 SDA |
+| SCL | D21 SCL |
+| INT | 선택, 예: D18 |
+
+주의:
+
+- MPU-9250 칩 자체는 3.3V 계열이다.
+- 모듈에 레귤레이터/레벨시프터가 있으면 5V 가능하지만, 확실하지 않으면 3.3V 사용.
+
+### 10.2 HX711
+
+추천 예비 핀:
+
+| HX711 | Arduino Mega |
+|---|---|
+| VCC | 5V |
+| GND | GND |
+| DT / DOUT | D22 |
+| SCK | D23 |
+
+로드셀은 HX711의 E+, E-, A+, A-에 로드셀 색상표 기준으로 연결한다.
+
+### 10.3 HC-SR04 초음파 센서
+
+현재 Arduino Mega 디지털 52/53에 연결한 거리 센서이다.
+
+| HC-SR04 | Arduino Mega |
+|---|---|
+| VCC | 5V |
+| GND | GND |
+| TRIG | D52 |
+| ECHO | D53 |
+
+Arduino 시리얼/Bluetooth 명령:
+
+```text
+US
+DIST
+ULTRA
+```
+
+응답 예:
+
+```json
+{"command":"ultrasonic","trig":52,"echo":53,"distance_cm":34.2,"encoder":0}
+```
+
+`distance_cm`가 `-1.0`이면 제한 시간 안에 Echo가 돌아오지 않았다는 뜻이다. 배선, 센서 방향, 장애물 거리, 5V/GND를 확인한다.
+
+### 10.4 Logic Level Converter / TXB0104
+
+사용 상황:
+
+- Raspberry Pi GPIO 3.3V와 Arduino 5V GPIO를 직접 연결해야 할 때 사용
+- 현재 Pi와 Arduino는 USB 시리얼로 통신하므로 필수는 아님
+
+기본 연결:
+
+| 레벨시프터 | 연결 |
+|---|---|
+| LV | Raspberry Pi 3.3V |
+| LV GND | Raspberry Pi GND |
+| HV | Arduino 5V |
+| HV GND | Arduino GND |
+| LV1/HV1 | 변환할 신호 1 |
+
+### 10.5 470uF 캐패시터
+
+모터 전원 노이즈 완화용:
+
+| 캐패시터 | 연결 |
+|---|---|
+| + | 모터 드라이버 12V+ 근처 |
+| - | 모터 드라이버 GND 근처 |
+
+극성을 반대로 꽂으면 위험하다.
+
+## 11. 테스트 순서
+
+1. Arduino에 `motor_bridge.ino` 업로드
+2. Arduino USB를 Raspberry Pi에 연결
+3. Pi에서 포트 확인
+
+```bash
+ls /dev/ttyACM* /dev/ttyUSB*
+```
+
+4. Pi에서 서버 실행
+
+```bash
+cd /home/test/test/ebma_hw-/hw
+sudo python3 camera/camara.py --arduino-port /dev/ttyACM0 --no-camera
+```
+
+5. Android 앱 설치
+6. Bluetooth 화면에서 ALL SEARCH
+7. Raspberry Pi 장치 Connect
+8. 메인 화면 -> 수동조작
+9. Speed PWM을 80-120 정도로 낮게 설정
+10. STOP 먼저 누름
+11. FORWARD 짧게 테스트
+12. STOP
+13. BACKWARD 짧게 테스트
+14. ENCODER 눌러 카운트 변화 확인
+
+## 12. 안전 체크리스트
+
+- 모터 전원 12V가 Arduino 5V/Pi 5V에 연결되지 않았는가?
+- Arduino GND, 모터 드라이버 GND, 12V 전원 GND가 공통인가?
+- 모터 드라이버 VSS/VCC가 로직 5V에 연결되어 있는가?
+- M+/M-가 모터 두 전원선에만 연결되어 있는가?
+- 엔코더 VCC/GND가 모터 전원선과 섞이지 않았는가?
+- 첫 테스트 PWM은 80-120 정도로 낮게 시작하는가?
+- 바퀴가 바닥에 닿지 않게 들어 올린 상태에서 첫 테스트하는가?
+
+## 13. 다음 개발 작업
+
+1. 앱 수동조작 화면에서 버튼 누르고 있는 동안만 모터 동작, 손 떼면 정지
+2. Arduino에서 엔코더 속도 RPM 계산
+3. 2번 모터 N3/N4 및 엔코더 핀 확정
+4. 좌/우 모터 차동 주행 명령 추가: `D <left_pwm> <right_pwm>`
+5. MPU-9250 자세 센서 연동
+6. 장애물 회피 센서/카메라/LiDAR 단계 확정
+7. 자율동작 모드 구현
+8. 지도/음성 목적지 모드 구현

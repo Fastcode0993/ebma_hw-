@@ -1,5 +1,42 @@
 # Walking Assistant Robot - Control System
 
+## Autonomous Hardware Runtime
+
+CSV 기준 구성은 Raspberry Pi 4, Arduino Mega 2560, 4채널 모터 드라이버,
+인코더 DC 모터, LD19 LiDAR, Pi Camera, MPU-9250 계열 센서 조합입니다.
+현재 런타임은 연결된 모듈만 사용하고, 연결되지 않은 카메라/LiDAR/모터는
+자동으로 제외한 뒤 계속 실행합니다.
+
+자율주행은 안전을 위해 기본값으로 꺼져 있습니다. LD19 LiDAR와 Arduino
+모터 브리지가 연결된 경우에만 아래처럼 켭니다.
+
+```bash
+python3 start.py --autonomous --lidar-port /dev/ttyUSB0 --motor-port /dev/ttyACM0
+```
+
+장애물이 전방 정지 거리 안에 들어오면 먼저 정지하고, 좌우 LiDAR 여유
+거리를 비교한 뒤 한쪽 바퀴만 움직여 회전합니다. 예를 들어 왼쪽이 더
+넓으면 왼쪽 바퀴는 멈추고 오른쪽 바퀴만 움직여 왼쪽으로 회전한 다음
+다시 직진합니다.
+
+주요 조정값:
+
+```bash
+python3 start.py --autonomous \
+  --stop-distance 0.55 \
+  --caution-distance 0.9 \
+  --clear-distance 0.75 \
+  --cruise-speed 0.28 \
+  --turn-speed 0.32 \
+  --turn-duration 0.8
+```
+
+Arduino Mega에는 `hw/arduino/motor_bridge/motor_bridge.ino`를 업로드합니다.
+모터 드라이버 보드의 실제 핀 배열이 다르면 스케치 상단의 핀 매핑만
+수정하면 됩니다. Raspberry Pi 쪽은 `D <left_pwm> <right_pwm>`와 `S`
+명령만 전송하므로, 기존 Arduino 펌웨어가 있다면 같은 프로토콜로 맞춰도
+됩니다.
+
 ## Raspberry Pi Hardware Start
 
 현재 하드웨어 시작점은 `hw/start.py`입니다. 라즈베리파이에서 카메라를 켜고 OpenCV 기반 객체 후보를 인식하며, LD19 LiDAR가 연결되어 있으면 `/dev/ttyUSB0`에서 230400bps로 스캔 데이터를 읽습니다.
